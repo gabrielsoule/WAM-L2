@@ -4,7 +4,7 @@ import sys
 class WAM:
     code = []
     heap = []
-    stack = []
+    stack = [0, 0, 0]
     xreg = []
 
     H = 0
@@ -69,11 +69,23 @@ class WAM:
                 self.stack[self.E + 2 + index] = value
 
     def instruction_size(self, p):
-        return 1 # hmmm
+        return 1 # hmm
+
+    def call(self, p, n):
+        self.CP = self.P + self.instruction_size(self.P)
+        self.P =
 
     def allocate(self, n):
+        newE = self.E + self.stack[self.E + 2] + 3
+        self.stack[newE] = self.E #last stack frame point
+        self.stack[newE + 1] = self.CP
+        self.stack[newE + 2] = n
+        self.E = newE
+        self.P = self.instruction_size(self.P)
 
     def deallocate(self, n):
+        self.P = self.stack[self.E + 1]
+        self.E = self.stack[self.E]
 
     def put_variable(self, xn, ai):
         cell = ("REF", self.H)
