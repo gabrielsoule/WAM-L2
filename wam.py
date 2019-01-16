@@ -18,7 +18,7 @@ class WAM:
     STR = "STR"
 
     # this recursive function manages the execute cycle: execute instruction, increment code pointer, repeat.
-    # the DEALLOCATE instruction manages termination; if a deallocate call results in an empty frame we are done.
+    # the DEALLOCATE instruction manages termination; if a deallocate call results in an empty stack we are done.
     def execute(self):
         instruction = self.code[self.P].lower().split(" ")
         name = instruction[0]
@@ -36,6 +36,10 @@ class WAM:
             self.put_value(instruction[1], instruction[2])
         elif name == "put_structure":
             pass  # TODO implement put_structure
+        elif name == "allocate":
+            self.allocate(instruction[1])
+        elif name == "deallocate":
+            self.deallocate()
         else:
             self.fail("Unknown instruction \"{}\"".format(self.code[self.P]))
         self.P = self.P + 1  # increment the program counter
@@ -73,7 +77,15 @@ class WAM:
 
     def call(self, p, n):
         self.CP = self.P + self.instruction_size(self.P)
-        self.P =
+        fail = True
+        for i in range(len(self.code)):
+            if self.code[i] == p + "/" + n:
+                self.P = i + 1
+                fail = False
+
+        if fail:
+            self.fail("Unable to find procedure " + p + "/" + n)
+
 
     def allocate(self, n):
         newE = self.E + self.stack[self.E + 2] + 3
@@ -83,7 +95,7 @@ class WAM:
         self.E = newE
         self.P = self.instruction_size(self.P)
 
-    def deallocate(self, n):
+    def deallocate(self):
         self.P = self.stack[self.E + 1]
         self.E = self.stack[self.E]
 
