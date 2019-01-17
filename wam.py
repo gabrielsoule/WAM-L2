@@ -4,7 +4,7 @@ import sys
 class WAM:
     code = []
     heap = []
-    stack = [0, 0, 0]
+    stack = []
     xreg = []
 
     H = 0
@@ -15,13 +15,15 @@ class WAM:
     WRITE = False  # True indicates READ mode
 
     REF = "REF"
-    STR = "STR"
+    STR = "STR" 
 
     # this recursive function manages the execute cycle: execute instruction, increment code pointer, repeat.
     # the DEALLOCATE instruction manages termination; if a deallocate call results in an empty stack we are done.
     def execute(self):
         instruction = self.code[self.P].lower().split(" ")
+
         name = instruction[0]
+        print("Executing instruction\n{}: {}".format(self.P, self.code[self.P]))
 
         # instruction calls
         if name == "get_structure":
@@ -42,7 +44,22 @@ class WAM:
             self.deallocate()
         else:
             self.fail("Unknown instruction \"{}\"".format(self.code[self.P]))
+        print("HEAP:")
+        for i in range(len(self.heap)):
+            print("{:02d}: {} {}".format(i, self.heap[i][0], self.heap[i][1]))
+        print()
+        print("REGISTERS:")
+        for i in range(len(self.xreg)):
+            print("x{}: {} {}".format(i, self.xreg[i][0], self.xreg[i][1]))
+        print()
+        print("STACK:")
+        for i in range(len(self.heap)):
+            print("{:02d}: {} {}".format(i, self.stack[i][0], self.stack[i][1]))
+        print()
+
         self.P = self.P + 1  # increment the program counter
+
+        # self.execute()
 
     # get a cell at a certain memory address
     def get(self, address):
@@ -58,19 +75,34 @@ class WAM:
             return self.stack[self.E + 2 + index]
 
     # put a cell/value of a cell at an address into a given memory space
+    # if the address is an int, it goes to the heap. otherwise, xreg or stack
+    # if the value is a string, the value must be retrieved from its register
     def put(self, value, address):
-        if type(value == str):
+        # print(type(value))
+        if type(value) == str:
             value = self.get(address)
 
         if type(address) == int:
-            self.heap[address] = value
+            self.listinsert(self.heap, value, address)
+
         else:
             dest = address[0]
             index = int(address[1:])
             if dest == "X" or dest == "A":
-                self.xreg[address] = value
+                self.listinsert(self.xreg, value, address)
             elif dest == "Y":
-                self.stack[self.E + 2 + index] = value
+                self.listinsert(self.stack, value, self.E + 2 + index)
+
+    # helper function for arbitrary insertions.
+    def listinsert(self, lis, item, index):
+        try:
+            lis[index] = item;
+        except IndexError:
+
+        if len(lis) <= index:
+            lis.append(item)
+        else:
+            lis[index] = item
 
     def instruction_size(self, p):
         return 1 # hmm
@@ -85,7 +117,6 @@ class WAM:
 
         if fail:
             self.fail("Unable to find procedure " + p + "/" + n)
-
 
     def allocate(self, n):
         newE = self.E + self.stack[self.E + 2] + 3
@@ -180,3 +211,20 @@ class WAM:
         print(message)
         print("=== WAM FAILURE ===")
         sys.exit(-1)
+
+
+def main():
+    print("Booting up...")
+    wam = WAM()
+    with open("code.pl") as f:
+        wam.code = f.readlines()
+    wam.code = [line.strip() for line in wam.code]
+    wam.P = 21  # beginning of query code; i don't have a way to recognise it yet since no compiler
+    for i in range(len(wam.code)):
+        print("{}: {}".format(i, wam.code[i]))
+    print("Press any key to proceed...")
+    while True:
+        input()
+        wam.execute()
+
+main()
