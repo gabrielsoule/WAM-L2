@@ -4,7 +4,7 @@ import sys
 class WAM:
     code = []
     heap = []
-    stack = []
+    stack = [0, 0, 0]
     xreg = []
 
     H = 0
@@ -96,12 +96,10 @@ class WAM:
     # helper function for arbitrary insertions.
     def listinsert(self, lis, item, index):
         try:
-            lis[index] = item;
+            lis[index] = item
         except IndexError:
-
-        if len(lis) <= index:
-            lis.append(item)
-        else:
+            for _ in range(index - len(lis) + 1):
+                lis.append(0)
             lis[index] = item
 
     def instruction_size(self, p):
@@ -119,12 +117,12 @@ class WAM:
             self.fail("Unable to find procedure " + p + "/" + n)
 
     def allocate(self, n):
-        newE = self.E + self.stack[self.E + 2] + 3
-        self.stack[newE] = self.E #last stack frame point
-        self.stack[newE + 1] = self.CP
-        self.stack[newE + 2] = n
+        newE = self.E + self.stack[self.E + 2] + 3  # current E (begin. of last frame) + last frame n + extra cells
+        self.listinsert(self.stack, self.E, newE)
+        self.listinsert(self.stack, self.CP, newE + 1)
+        self.listinsert(self.stack, n, newE + 2)
         self.E = newE
-        self.P = self.instruction_size(self.P)
+        # self.P = self.P + self.instruction_size(self.P)
 
     def deallocate(self):
         self.P = self.stack[self.E + 1]
