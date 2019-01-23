@@ -20,13 +20,14 @@ class WAM:
     # this recursive function manages the execute cycle: execute instruction, increment code pointer, repeat.
     # the DEALLOCATE instruction manages termination; if a deallocate call results in an empty stack we are done.
     def execute(self):
-        instruction = self.code[self.P].lower().split(" ")
+        instruction = self.code[self.P].split(" ")
 
         name = instruction[0]
-        print("Executing instruction\n{}: {}".format(self.P, self.code[self.P]))
+        print("=== Executing instruction ===\n{}: {}".format(self.P, self.code[self.P]))
 
         # instruction calls
         if name == "get_structure":
+
             self.get_structure(instruction[1], instruction[2], instruction[3])
         elif name == "get_variable":
             self.get_variable(instruction[1], instruction[2])
@@ -42,19 +43,27 @@ class WAM:
             self.allocate(instruction[1])
         elif name == "deallocate":
             self.deallocate()
+        elif name == "call":
+            self.call(instruction[1], instruction[2])
         else:
             self.fail("Unknown instruction \"{}\"".format(self.code[self.P]))
+
+        print()
+        print("P = {}, H = {}, E = {}, CP = {}, S = {}, MODE = {}"
+              .format(self.P, self.H, self.E, self.CP, self.S, "WRITE" if self.WRITE else "READ"))
+        print()
         print("HEAP:")
         for i in range(len(self.heap)):
             print("{:02d}: {} {}".format(i, self.heap[i][0], self.heap[i][1]))
         print()
         print("REGISTERS:")
-        for i in range(len(self.xreg)):
+        for i in range(1, len(self.xreg)):
             print("x{}: {} {}".format(i, self.xreg[i][0], self.xreg[i][1]))
+            # print(self.xreg[i])
         print()
         print("STACK:")
-        for i in range(len(self.heap)):
-            print("{:02d}: {} {}".format(i, self.stack[i][0], self.stack[i][1]))
+        for i in range(len(self.stack)):
+            print("{:02d}: {}".format(i, self.stack[i]))
         print()
 
         self.P = self.P + 1  # increment the program counter
@@ -80,7 +89,8 @@ class WAM:
     def put(self, value, address):
         # print(type(value))
         if type(value) == str:
-            value = self.get(address)
+            # print("getting" + address)
+            value = self.get(value)
 
         if type(address) == int:
             self.listinsert(self.heap, value, address)
@@ -89,7 +99,7 @@ class WAM:
             dest = address[0]
             index = int(address[1:])
             if dest == "X" or dest == "A":
-                self.listinsert(self.xreg, value, address)
+                self.listinsert(self.xreg, value, index)
             elif dest == "Y":
                 self.listinsert(self.stack, value, self.E + 2 + index)
 
@@ -99,7 +109,7 @@ class WAM:
             lis[index] = item
         except IndexError:
             for _ in range(index - len(lis) + 1):
-                lis.append(0)
+                lis.append((None, None))
             lis[index] = item
 
     def instruction_size(self, p):
@@ -110,13 +120,14 @@ class WAM:
         fail = True
         for i in range(len(self.code)):
             if self.code[i] == p + "/" + n:
-                self.P = i + 1
+                self.P = i
                 fail = False
 
         if fail:
             self.fail("Unable to find procedure " + p + "/" + n)
 
     def allocate(self, n):
+        n = int(n)
         newE = self.E + self.stack[self.E + 2] + 3  # current E (begin. of last frame) + last frame n + extra cells
         self.listinsert(self.stack, self.E, newE)
         self.listinsert(self.stack, self.CP, newE + 1)
@@ -145,12 +156,31 @@ class WAM:
         self.unify(xn, ai)
         pass
 
+    def put_structure(self, f, n, xi):
+        self.put(("STR", self.H + 1), self.H)
+        self.put((f, n), self.H + 1)
+        self.put(self.heap[self.H], xi)
+        self.H += 2
+
     def get_structure(self, f, n, xi):
         address = self.deref(xi)
         cell = self.get(address)
         if cell[0] == "REF":
-            self.heap[self.H] = ("STR", self.H + 1)
-            self.heap[self.H + 1] = (f, n)
+            self.put(("STR", self.H + 1), self.H)
+            self.put((f, n), self.H + 1)
+            self.bind(address, self.H)
+            self.H += 2
+            self.WRITE = True
+        elif cell[0] == "STR":
+            if self.get(cell[1]) == (f, n):
+                self.S = cell[1] + 1
+                self.WRITE = False
+            else:
+                self.fail("Predicates {}/{} and {}/{} do not match"
+                          .format(f, n, cell[0], cell[1]))
+        else:
+            self.fail("Expected a REF or STR to match structure {}/{} against, found {} instead"
+                      .format(f, n, cell))
 
     # there's got to be a super elegant way to bind two variables together. but this aint it chief
     def bind(self, a1, a2):
@@ -173,7 +203,7 @@ class WAM:
             print("{}: {} {}".format(a1, a1[0], a1[1]))
             print("{}: {} {}".format(a2, a2[0], a2[1]))
 
-# General purpose unify algorithm for unifying two predicates already built upon the heap
+# General purpose unify algorithm for unifying two terms already built upon the heap
     def unify(self, a1, a2):
         pdl = [a1, a2]
         fail = False
@@ -204,10 +234,9 @@ class WAM:
             return address
 
     def fail(self, message):
-        print("=== WAM FAILURE ===" + message)
+        print("=== WAM FAILURE ===")
         print("Error during instruction {} at index {}".format(self.code[self.P], self.P))
         print(message)
-        print("=== WAM FAILURE ===")
         sys.exit(-1)
 
 
