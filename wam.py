@@ -177,7 +177,7 @@ class WAM:
                 self.WRITE = False
             else:
                 self.fail("Predicates {}/{} and {}/{} do not match"
-                          .format(f, n, cell[0], cell[1]))
+                          .format(f, n, self.get(cell[1])[0], self.get(cell[1])[1]))
         else:
             self.fail("Expected a REF or STR to match structure {}/{} against, found {} instead"
                       .format(f, n, cell))
