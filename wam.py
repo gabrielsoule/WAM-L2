@@ -136,7 +136,7 @@ class WAM:
         # self.P = self.P + self.instruction_size(self.P)
 
     def deallocate(self):
-        self.P = self.stack[self.E + 1]
+        self.P = self.stack[self.E + 1] - 1
         self.E = self.stack[self.E]
 
     def put_variable(self, xn, ai):
@@ -179,7 +179,7 @@ class WAM:
                 self.fail("Predicates {}/{} and {}/{} do not match"
                           .format(f, n, self.get(cell[1])[0], self.get(cell[1])[1]))
         else:
-            self.fail("Expected a REF or STR to match structure {}/{} against, found {} instead"
+            self.fail("Expected a REF or STR to match structure {}/{} against, got {} instead"
                       .format(f, n, cell))
 
     # there's got to be a super elegant way to bind two variables together. but this aint it chief
@@ -243,7 +243,11 @@ class WAM:
 def main():
     print("Booting up...")
     wam = WAM()
-    with open("code.pl") as f:
+    # current program:
+    # q(a, b).
+    # r(b, c).
+    # p(X, Y) :- q(X, Z), r(Z, Y)
+    with open("code.wam") as f:
         wam.code = f.readlines()
     wam.code = [line.strip() for line in wam.code]
     wam.P = 21  # beginning of query code; i don't have a way to recognise it yet since no compiler
@@ -253,5 +257,6 @@ def main():
     while True:
         input()
         wam.execute()
+
 
 main()
