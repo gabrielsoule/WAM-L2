@@ -38,7 +38,7 @@ class WAM:
         elif name == "put_value":
             self.put_value(instruction[1], instruction[2])
         elif name == "put_structure":
-            pass  # TODO implement put_structure
+            self.put_structure(instruction[1], instruction[2], instruction[3])
         elif name == "allocate":
             self.allocate(instruction[1])
         elif name == "deallocate":
