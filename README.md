@@ -2,7 +2,7 @@
 
 This is a Python implementation of a Warren Abstract Machine without backtracking. It does not include a compiler.
 
-It's pretty simple. I made it to supplement my WAM research project I did over the winter, during my first year of CS @ UCSB College of Creative Studies. With that in mind, I've also included the final presentation pdf in the repo. It's way cooler than the actual code and I think you chould check it out instead.
+It's pretty simple. I made it to supplement my WAM research project I did over the winter, during my first year of CS @ UCSB College of Creative Studies. With that in mind, I've also included the final presentation pdf in the repo. It's way cooler than the actual code and I think you chould check it out.
 
 Anyway.
 
